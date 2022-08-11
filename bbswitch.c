@@ -35,6 +35,7 @@
 #include <linux/suspend.h>
 #include <linux/seq_file.h>
 #include <linux/pm_runtime.h>
+#include <linux/proc_fs.h>
 
 #define BBSWITCH_VERSION "0.8"
 
@@ -262,10 +263,9 @@ static void bbswitch_off(void) {
     pci_disable_device(dis_dev);
     do {
         struct acpi_device *ad = NULL;
-        int r;
 
-        r = acpi_bus_get_device(dis_handle, &ad);
-        if (r || !ad) {
+        ad = acpi_fetch_acpi_dev(dis_handle);
+        if (!ad) {
             pr_warn("Cannot get ACPI device for PCI device\n");
             break;
         }
@@ -375,12 +375,12 @@ static int bbswitch_pm_handler(struct notifier_block *nbp,
     return 0;
 }
 
-static struct file_operations bbswitch_fops = {
-    .open   = bbswitch_proc_open,
-    .read   = seq_read,
-    .write  = bbswitch_proc_write,
-    .llseek = seq_lseek,
-    .release= single_release
+static struct proc_ops bbswitch_fops = {
+    .proc_open   = bbswitch_proc_open,
+    .proc_read   = seq_read,
+    .proc_write  = bbswitch_proc_write,
+    .proc_lseek = seq_lseek,
+    .proc_release= single_release
 };
 
 static struct notifier_block nb = {
